@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Polymarket Sports Filter",
+  "version": "0.1.0",
+  "description": "Filters Polymarket profile Positions and Activity rows by selected sports.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://polymarket.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://polymarket.com/@*", "https://polymarket.com/profile/*"],
+      "js": ["src/sportClassifier.js", "src/contentScript.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Polymarket Sports Filter",
+    "default_popup": "popup/popup.html"
+  }
+}

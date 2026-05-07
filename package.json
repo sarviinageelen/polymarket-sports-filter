@@ -1,0 +1,13 @@
+{
+  "name": "polymarket-sports-filter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Manifest V3 Chrome extension that filters Polymarket profile rows by selected sports.",
+  "scripts": {
+    "test": "node tests/classifier.test.js",
+    "qa:live": "node scripts/qa-live.js",
+    "qa:deep": "node scripts/qa-deep.js",
+    "qa:screenshots": "node scripts/qa-screenshots.js",
+    "qa:sequence": "node scripts/qa-sequence.js"
+  }
+}

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Polymarket Sports Filter</title>
+    <link rel="stylesheet" href="popup.css" />
+    <script src="../src/sportClassifier.js" defer></script>
+    <script src="popup.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Sports Filter</h1>
+        <p>Polymarket profile rows</p>
+      </header>
+
+      <form id="sportsForm">
+        <fieldset>
+          <legend>Show markets</legend>
+          <div id="sportsOptions" class="options"></div>
+        </fieldset>
+      </form>
+
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </main>
+  </body>
+</html>
