@@ -22,6 +22,8 @@ The popup also shows simple diagnostics for the active Polymarket profile tab:
 
 If NBA is selected and the page looks blank, the diagnostics explain whether the currently rendered Polymarket batch has no NBA rows. Use `Find next NBA row` to manually search deeper. That button scrolls in bounded steps and can click visible `Show more activity` or `Show more positions` controls up to a small limit; it never runs automatically.
 
+Use `Show debug details` in the popup when you need to inspect what the extension classified. It prints the selected filter, current row counts, matching sample rows, and visible filtered samples from the active profile tab.
+
 When all rendered rows are hidden, the page also shows a small bottom-right hint so a blank filtered view does not look broken.
 
 Supported sports in the popup:
@@ -125,6 +127,8 @@ Run the check mode with the manual find-next command:
 ```bash
 npm run open:profile -- "https://polymarket.com/@demonren?tab=activity" --check --find-next-check
 ```
+
+Check mode also fails if NBA matching samples contain known non-NBA leakage terms such as `Barcelona`, `Avalanche`, `NHL`, or `La Liga`.
 
 After logging in through the stable manual profile, save a reusable session bundle:
 

@@ -15,6 +15,10 @@
   const diagnosticsMessage = document.getElementById("diagnosticsMessage");
   const searchMessage = document.getElementById("searchMessage");
   const findNextButton = document.getElementById("findNextButton");
+  const debugToggle = document.getElementById("debugToggle");
+  const debugDetails = document.getElementById("debugDetails");
+  let latestDiagnostics = null;
+  let debugExpanded = false;
 
   if (!api || !stateApi || !optionsRoot) {
     return;
@@ -69,6 +73,72 @@
     findNextButton.disabled = !enabled;
   }
 
+  function truncateText(text, maxLength = 180) {
+    const cleanText = String(text || "").replace(/\s+/g, " ").trim();
+
+    return cleanText.length > maxLength ? `${cleanText.slice(0, maxLength - 1)}...` : cleanText;
+  }
+
+  function formatSample(sample, index) {
+    const categories = Array.isArray(sample.categories) && sample.categories.length
+      ? sample.categories.join(", ")
+      : "unknown";
+
+    return `${index + 1}. [${categories}] ${truncateText(sample.text) || "(empty row text)"}`;
+  }
+
+  function renderDebugDetails(snapshot) {
+    latestDiagnostics = snapshot || {};
+
+    if (!debugDetails) {
+      return;
+    }
+
+    const matchingSamples = Array.isArray(latestDiagnostics.matchingSamples)
+      ? latestDiagnostics.matchingSamples
+      : [];
+    const visibleNonMatchingSamples = Array.isArray(latestDiagnostics.visibleNonMatchingSamples)
+      ? latestDiagnostics.visibleNonMatchingSamples
+      : [];
+    const search = latestDiagnostics.search;
+    const lines = [
+      `URL: ${latestDiagnostics.url || "-"}`,
+      `Selected: ${latestDiagnostics.selectedSportsLabel || getCurrentSportsLabel()}`,
+      `Rendered: ${latestDiagnostics.renderedRows ?? "-"}`,
+      `Visible matches: ${latestDiagnostics.visibleMatchingRows ?? "-"}`,
+      `Total matches: ${latestDiagnostics.matchingRows ?? "-"}`,
+      `Hidden: ${latestDiagnostics.hiddenRows ?? "-"}`,
+      `Visible non-matches: ${latestDiagnostics.visibleNonMatchingRows ?? "-"}`,
+      `Message: ${latestDiagnostics.message || "-"}`,
+      `Last search: ${search && search.message ? search.message : "none"}`,
+      "",
+      "Matching samples:",
+      ...(matchingSamples.length ? matchingSamples.map(formatSample) : ["none"]),
+      "",
+      "Visible filtered samples:",
+      ...(visibleNonMatchingSamples.length ? visibleNonMatchingSamples.map(formatSample) : ["none"]),
+    ];
+
+    debugDetails.textContent = lines.join("\n");
+  }
+
+  function setDebugExpanded(expanded) {
+    debugExpanded = Boolean(expanded);
+
+    if (debugDetails) {
+      debugDetails.hidden = !debugExpanded;
+    }
+
+    if (debugToggle) {
+      debugToggle.setAttribute("aria-expanded", debugExpanded ? "true" : "false");
+      debugToggle.textContent = debugExpanded ? "Hide debug details" : "Show debug details";
+    }
+
+    if (debugExpanded) {
+      renderDebugDetails(latestDiagnostics);
+    }
+  }
+
   function renderUnavailable(message) {
     if (selectedSportsLabel) {
       selectedSportsLabel.textContent = getCurrentSportsLabel();
@@ -87,6 +157,7 @@
     }
 
     setFindNextEnabled(false);
+    renderDebugDetails({ message });
   }
 
   function renderDiagnostics(pageStatus) {
@@ -116,6 +187,7 @@
     }
 
     setFindNextEnabled(Boolean(snapshot.isProfilePage));
+    renderDebugDetails(snapshot);
   }
 
   function queryActiveTab() {
@@ -244,6 +316,12 @@
   if (findNextButton) {
     findNextButton.addEventListener("click", findNextMatch);
   }
+
+  if (debugToggle) {
+    debugToggle.addEventListener("click", () => setDebugExpanded(!debugExpanded));
+  }
+
+  setDebugExpanded(false);
 
   chrome.storage.sync.get({ [STORAGE_KEY]: api.DEFAULT_SELECTED_SPORTS }, (items) => {
     renderOptions(items[STORAGE_KEY]);

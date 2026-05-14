@@ -23,6 +23,12 @@ const PROFILE_DIR =
   process.env.PSF_OPEN_PROFILE_DIR ||
   path.join(os.tmpdir(), `psf-open-profile-${new Date().toISOString().replace(/[:.]/g, "-")}`);
 const STORAGE_KEY = "selectedSports";
+const KNOWN_NON_NBA_SAMPLE_PATTERNS = [
+  { label: "Barcelona", pattern: /\bbarcelona\b/i },
+  { label: "Avalanche", pattern: /\bavalanche\b/i },
+  { label: "NHL", pattern: /\bnhl\b/i },
+  { label: "La Liga", pattern: /\bla\s*liga\b|\blaliga\b/i },
+];
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -190,6 +196,53 @@ function readSessionJson(filePath) {
     origin: payload.origin || "https://polymarket.com",
     sessionStorage: payload.sessionStorage && typeof payload.sessionStorage === "object" ? payload.sessionStorage : {},
   };
+}
+
+function cleanSampleText(text) {
+  return String(text || "").replace(/\s+/g, " ").trim();
+}
+
+function findKnownNonNbaLeakageSamples(statusEntries) {
+  const leaks = [];
+
+  for (const entry of statusEntries) {
+    if (!entry || !entry.status || !entry.status.runtimeStatus) {
+      continue;
+    }
+
+    const samples = Array.isArray(entry.status.runtimeStatus.matchingSamples)
+      ? entry.status.runtimeStatus.matchingSamples
+      : [];
+
+    for (const sample of samples) {
+      const text = cleanSampleText(sample && sample.text);
+      const hits = KNOWN_NON_NBA_SAMPLE_PATTERNS.filter(({ pattern }) => pattern.test(text)).map(
+        ({ label }) => label
+      );
+
+      if (!hits.length) {
+        continue;
+      }
+
+      leaks.push({
+        source: entry.label,
+        hits,
+        categories: Array.isArray(sample.categories) ? sample.categories : [],
+        text: text.slice(0, 280),
+      });
+    }
+  }
+
+  return leaks;
+}
+
+function formatLeakageError(leaks) {
+  const details = leaks
+    .slice(0, 5)
+    .map((leak) => `${leak.source}: ${leak.hits.join(", ")} in "${leak.text}"`)
+    .join("; ");
+
+  return `Known non-NBA leakage appeared in NBA matching samples: ${details}`;
 }
 
 function launchChrome() {
@@ -460,6 +513,10 @@ async function run() {
         )
       : null;
     const statusAfterFindNext = FIND_NEXT_CHECK ? await collectStatus(cdp, page.sessionId, context.id) : null;
+    const qaLeakageSamples = findKnownNonNbaLeakageSamples([
+      { label: "initial status", status },
+      { label: "status after find next", status: statusAfterFindNext },
+    ]);
 
     console.log(
       JSON.stringify(
@@ -473,6 +530,7 @@ async function run() {
           status,
           findNext,
           statusAfterFindNext,
+          qaLeakageSamples,
         },
         null,
         2
@@ -481,6 +539,9 @@ async function run() {
 
     if (CHECK_MODE) {
       child.kill();
+      if (qaLeakageSamples.length) {
+        throw new Error(formatLeakageError(qaLeakageSamples));
+      }
       return;
     }
 

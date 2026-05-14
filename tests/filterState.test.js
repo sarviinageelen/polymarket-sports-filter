@@ -37,7 +37,7 @@ test("explains unsupported pages", () => {
 test("explains a page before rows render", () => {
   assert.equal(
     buildDiagnosticsMessage({ isProfilePage: true, renderedRows: 0 }, ["nba"], sports),
-    "No profile rows are rendered yet."
+    "Polymarket has not rendered profile rows yet. Try switching tabs or scrolling."
   );
 });
 

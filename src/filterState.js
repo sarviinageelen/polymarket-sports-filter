@@ -27,7 +27,7 @@
     }
 
     if (!safeStats.renderedRows) {
-      return "No profile rows are rendered yet.";
+      return "Polymarket has not rendered profile rows yet. Try switching tabs or scrolling.";
     }
 
     if (!safeStats.matchingRows) {

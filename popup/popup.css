@@ -183,6 +183,34 @@ h2 {
   cursor: not-allowed;
 }
 
+.debug-toggle {
+  width: 100%;
+  min-height: 30px;
+  margin-top: 8px;
+  border: 1px solid #d7dde6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.debug-details {
+  max-height: 160px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding: 8px;
+  border: 1px solid #e5e9f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #17202a;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
 .status {
   min-height: 16px;
   margin-top: 10px;
