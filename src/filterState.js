@@ -31,10 +31,10 @@
     }
 
     if (!safeStats.matchingRows) {
-      return `The current Polymarket batch has no ${selectedLabel} rows.`;
+      return `The current loaded batch has no ${selectedLabel} rows.`;
     }
 
-    return `Showing matching ${selectedLabel} rows from the current Polymarket batch.`;
+    return `Showing matching ${selectedLabel} rows from the current loaded batch.`;
   }
 
   return {

@@ -38,6 +38,18 @@
     return stateApi.formatSelectedSportsLabel(getCheckedSports(), api.SPORT_OPTIONS);
   }
 
+  function getFindNextLabel(selectedLabel, visibleMatchingRows) {
+    const selectedCount = getCheckedSports().length;
+
+    if (selectedCount !== 1) {
+      return visibleMatchingRows > 0 ? "Find another matching row" : "Find next matching row";
+    }
+
+    return visibleMatchingRows > 0
+      ? `Find another ${selectedLabel} row`
+      : `Find next ${selectedLabel} row`;
+  }
+
   function setCounter(element, value) {
     if (!element) {
       return;
@@ -100,7 +112,7 @@
     }
 
     if (findNextButton) {
-      findNextButton.textContent = `Find next ${selectedLabel} row`;
+      findNextButton.textContent = getFindNextLabel(selectedLabel, Number(snapshot.visibleMatchingRows || 0));
     }
 
     setFindNextEnabled(Boolean(snapshot.isProfilePage));

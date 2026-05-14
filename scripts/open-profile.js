@@ -377,6 +377,7 @@ async function collectStatus(cdp, sessionId, contextId) {
         extensionActive: Boolean(document.getElementById("psf-style")),
         filteredRows: document.querySelectorAll("[data-psf-filtered]").length,
         hiddenRows: document.querySelectorAll(".psf-hidden-row").length,
+        emptyHintVisible: visible(document.getElementById("psf-empty-hint")),
         loggedOut: [...document.querySelectorAll("button, a")]
           .filter(visible)
           .map((element) => clean(element.textContent))

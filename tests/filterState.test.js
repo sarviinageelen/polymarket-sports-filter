@@ -48,7 +48,7 @@ test("explains a blank NBA-only batch", () => {
       ["nba"],
       sports
     ),
-    "The current Polymarket batch has no NBA rows."
+    "The current loaded batch has no NBA rows."
   );
 });
 
@@ -59,6 +59,6 @@ test("explains visible matching rows", () => {
       ["nba"],
       sports
     ),
-    "Showing matching NBA rows from the current Polymarket batch."
+    "Showing matching NBA rows from the current loaded batch."
   );
 });

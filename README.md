@@ -18,9 +18,11 @@ The popup also shows simple diagnostics for the active Polymarket profile tab:
 
 - `Matching`: rendered rows that match the selected sport filter and are allowed to show.
 - `Hidden`: rendered rows that were filtered out.
-- `Checked`: profile rows the extension inspected in the current Polymarket render batch.
+- `Batch`: profile rows the extension inspected in the current loaded Polymarket batch.
 
 If NBA is selected and the page looks blank, the diagnostics explain whether the currently rendered Polymarket batch has no NBA rows. Use `Find next NBA row` to manually search deeper. That button scrolls in bounded steps and can click visible `Show more activity` or `Show more positions` controls up to a small limit; it never runs automatically.
+
+When all rendered rows are hidden, the page also shows a small bottom-right hint so a blank filtered view does not look broken.
 
 Supported sports in the popup:
 
@@ -33,6 +35,8 @@ Supported sports in the popup:
 - Esports
 
 The local classifier also recognizes crypto and politics keywords so examples like Bitcoin or election markets are hidden when only NBA is selected.
+
+Short NBA team abbreviations are treated conservatively. A single repeated code in a non-NBA event slug is not enough to show a row as NBA; this avoids false positives such as La Liga `lal` slugs and NHL `min` slugs.
 
 ## How It Works
 
@@ -142,8 +146,9 @@ Live QA screenshots and reports are written to `.qa/`, which is intentionally ig
 
 Round checked locally on May 14, 2026 with restored `.qa/polymarket-session.json`, NBA selected by default, and content-script diagnostics from `npm run open:profile -- "https://polymarket.com/@demonren?tab=activity" --check --find-next-check`:
 
-- Activity initial diagnostics: 20 rendered rows, 20 hidden rows, 0 matching NBA rows, 0 visible non-NBA rows.
-- Manual find-next diagnostics: 18 bounded scroll attempts, 3 show-more clicks, no NBA row found in the searched range.
+- Activity initial diagnostics: 19 rendered rows, 0 matching NBA rows, 0 visible non-NBA rows.
+- Manual find-next diagnostics: found `Timberwolves vs. Spurs` after 4 bounded scroll attempts and 0 show-more clicks.
+- Positions initial diagnostics: 18 rendered rows, 0 matching NBA rows, blank-state hint visible.
 
 The browser check confirmed the restored session was logged in and no non-NBA markets were visible under NBA-only filtering. Blank space can still appear because hidden virtual rows intentionally keep their measured height.
 

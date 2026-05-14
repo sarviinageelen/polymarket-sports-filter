@@ -46,6 +46,7 @@ test("classifies NBA markets by league terms and team names", () => {
   assert.deepEqual(classifyMarketText("Suns vs. Clippers - Game 7"), ["nba"]);
   assert.deepEqual(classifyMarketText("/sports/nba/games BOS vs DAL: Game spread"), ["nba"]);
   assert.deepEqual(classifyMarketText("NYK vs ATL"), ["nba"]);
+  assert.deepEqual(classifyMarketText("LAL vs OKC"), ["nba"]);
   assert.deepEqual(classifyMarketText("/sports/nba/games Hornets vs. Nets"), ["nba"]);
 });
 
@@ -61,6 +62,21 @@ test("hides non-NBA sports and non-sports when NBA is selected", () => {
   assert.equal(matchesSelectedSports("UFC 328: Yaroslav Amosov vs Joel Alvarez", ["nba"]), false);
   assert.equal(matchesSelectedSports("/sports/nba/games Chicago Sky vs. Golden State Valkyries", ["nba"]), false);
   assert.equal(matchesSelectedSports("/sports/nhl/games/min-vs-col Wild vs. Avalanche Wild", ["nba"]), false);
+  assert.equal(matchesSelectedSports("/event/lal-ala-bar-2026-05-13 Will Deportivo Alavés vs. FC Barcelona end in a draw?", ["nba"]), false);
+  assert.equal(
+    matchesSelectedSports(
+      "Buy Wild vs. Avalanche Wild event nhl min col 2026 event nhl min col 2026 event nhl min col 2026",
+      ["nba"]
+    ),
+    false
+  );
+  assert.equal(
+    matchesSelectedSports(
+      "Redeem Will Deportivo Alavés vs. FC Barcelona end in a draw? event lal ala bar 2026 event lal ala bar 2026",
+      ["nba"]
+    ),
+    false
+  );
   assert.equal(matchesSelectedSports("/sports/atp/games Felix Auger-Aliassime vs Jannik Sinner", ["nba"]), false);
 });
 

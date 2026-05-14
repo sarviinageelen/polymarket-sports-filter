@@ -22,7 +22,7 @@ This version does not fetch Polymarket APIs, place trades, modify wallet state, 
 
 ## User Experience
 
-The popup remains the control surface. It keeps the existing sport checkboxes and adds a compact diagnostics area:
+The popup remains the main control surface. It keeps the existing sport checkboxes and adds a compact diagnostics area:
 
 ```text
 Selected: NBA
@@ -46,6 +46,8 @@ Showing matching rows from the current Polymarket batch.
 
 If the active tab is not a supported Polymarket profile route, the popup explains that the user should open a Polymarket profile page.
 
+When all currently rendered rows are hidden, the content script also shows a small bottom-right page hint. This hint is intentionally short and points users back to the extension popup for details.
+
 ## Architecture
 
 `src/contentScript.js` stays responsible for page interaction. It filters rows, records the latest row counts, exposes a status snapshot, and handles the manual find-next command.
@@ -55,6 +57,8 @@ If the active tab is not a supported Polymarket profile route, the popup explain
 `src/filterState.js` is a new small pure helper module. It formats selected sport labels, turns numeric row stats into plain-English explanations, and gives tests a stable place to verify diagnostics behavior without needing a browser.
 
 `src/sportClassifier.js` remains the local classifier. It receives more aliases and regression examples, but still uses local text and URL hints only.
+
+Short NBA abbreviations are conservative: one repeated abbreviation in a non-NBA slug is not enough to classify a row as NBA. Abbreviation-only classification requires at least two distinct NBA abbreviations in a matchup-like context.
 
 ## Manual Find Next Behavior
 
@@ -97,10 +101,12 @@ Browser checks cover:
 ## Acceptance Criteria
 
 - A blank Activity or Positions view has a plain-English explanation in the popup.
+- A blank Activity or Positions view has a small in-page hint so it does not look like the page broke.
 - The user can manually search deeper for the next NBA row.
 - The search has fixed limits and does not run unless the user clicks the button.
 - The search can use Polymarket's own show-more controls, but only inside the manual command and only within the fixed limit.
 - NBA-only filtering does not show known non-NBA rows.
 - Real LoL/LPL and other esports examples classify as esports, not NBA.
 - WNBA rows such as `Chicago Sky vs. Golden State Valkyries` and NHL rows such as `Wild vs. Avalanche` stay hidden under NBA-only filtering.
+- Soccer rows with La Liga-style `lal` slugs, such as `Deportivo Alavés vs. FC Barcelona`, stay hidden under NBA-only filtering.
 - Tests and syntax checks pass.

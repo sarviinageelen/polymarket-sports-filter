@@ -22,6 +22,7 @@
   const FIND_NEXT_SHOW_MORE_WAIT_MS = 1800;
   const MESSAGE_GET_STATUS = "PSF_GET_STATUS";
   const MESSAGE_FIND_NEXT_MATCH = "PSF_FIND_NEXT_MATCH";
+  const EMPTY_HINT_ID = "psf-empty-hint";
   const EVENT_MARKET_LINK_SELECTOR = "a[href*='/event/'], a[href*='/market/']";
   const CATEGORY_LINK_SELECTOR = "a[href*='/sports/'], a[href*='/esports/']";
   const FILTERABLE_LINK_SELECTOR = `${EVENT_MARKET_LINK_SELECTOR}, ${CATEGORY_LINK_SELECTOR}`;
@@ -58,7 +59,7 @@
 
     const style = document.createElement("style");
     style.id = "psf-style";
-    style.textContent = `.${HIDDEN_CLASS}{display:none!important;}.${HIDDEN_VIRTUAL_CLASS}{visibility:hidden!important;pointer-events:none!important;}`;
+    style.textContent = `.${HIDDEN_CLASS}{display:none!important;}.${HIDDEN_VIRTUAL_CLASS}{visibility:hidden!important;pointer-events:none!important;}#${EMPTY_HINT_ID}{position:fixed;right:16px;bottom:16px;z-index:2147483647;max-width:280px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#17202a;box-shadow:0 8px 24px rgba(15,23,42,.14);font:600 12px/1.35 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}#${EMPTY_HINT_ID}[hidden]{display:none!important;}`;
     document.documentElement.appendChild(style);
   }
 
@@ -477,7 +478,39 @@
 
   function updateLatestStatus(overrides = {}) {
     latestStatus = createBaseStatus(overrides);
+    updateEmptyHint(latestStatus);
     return latestStatus;
+  }
+
+  function getOrCreateEmptyHint() {
+    let hint = document.getElementById(EMPTY_HINT_ID);
+
+    if (!hint) {
+      hint = document.createElement("div");
+      hint.id = EMPTY_HINT_ID;
+      hint.hidden = true;
+      hint.setAttribute("role", "status");
+      hint.setAttribute("aria-live", "polite");
+      document.documentElement.appendChild(hint);
+    }
+
+    return hint;
+  }
+
+  function updateEmptyHint(status) {
+    const hint = getOrCreateEmptyHint();
+    const shouldShow =
+      status &&
+      status.isProfilePage &&
+      status.renderedRows > 0 &&
+      status.matchingRows === 0 &&
+      status.hiddenRows > 0;
+
+    hint.hidden = !shouldShow;
+
+    if (shouldShow) {
+      hint.textContent = `${status.selectedSportsLabel} filter active: no matching rows in this loaded batch. Open the extension for details.`;
+    }
   }
 
   function updateSearchResult(result) {
@@ -638,7 +671,8 @@
     try {
       let attempts = 0;
       let showMoreClicks = 0;
-      let minTop = window.scrollY + 8;
+      let minTop =
+        latestStatus.visibleMatchingRows > 0 ? window.scrollY + window.innerHeight + 8 : window.scrollY + 8;
       const scrollAmount = Math.max(240, Math.floor(window.innerHeight * FIND_NEXT_SCROLL_RATIO));
 
       while (attempts <= FIND_NEXT_MAX_ATTEMPTS) {

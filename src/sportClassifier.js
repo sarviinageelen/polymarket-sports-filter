@@ -31,14 +31,6 @@
         "nba championship",
         "play-in tournament",
         "basketball playoffs",
-        "bkn",
-        "gsw",
-        "lac",
-        "lal",
-        "nop",
-        "nyk",
-        "okc",
-        "sas",
         "lakers",
         "los angeles lakers",
         "la lakers",
@@ -425,6 +417,39 @@
     },
   });
 
+  const NBA_ABBREVIATIONS = Object.freeze([
+    "atl",
+    "bkn",
+    "bos",
+    "cha",
+    "chi",
+    "cle",
+    "dal",
+    "den",
+    "det",
+    "gsw",
+    "hou",
+    "ind",
+    "lac",
+    "lal",
+    "mem",
+    "mia",
+    "mil",
+    "min",
+    "nop",
+    "nyk",
+    "okc",
+    "orl",
+    "phi",
+    "phx",
+    "por",
+    "sac",
+    "sas",
+    "tor",
+    "uta",
+    "was",
+  ]);
+
   const SPORT_IDS = new Set(SPORT_OPTIONS.map((option) => option.id));
   const PATTERN_CACHE = new Map();
 
@@ -478,6 +503,24 @@
     return hasPatternMatch(text, category, "excludeKeywords");
   }
 
+  function tokenize(value) {
+    return normalizeText(value)
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean);
+  }
+
+  function hasNbaAbbreviationPair(text) {
+    const abbreviations = new Set(NBA_ABBREVIATIONS);
+    const tokens = tokenize(text);
+    const abbreviationCount = new Set(tokens.filter((token) => abbreviations.has(token))).size;
+
+    if (abbreviationCount < 2) {
+      return false;
+    }
+
+    return /\b(vs|versus|at|game|games|handicap|spread|moneyline|winner)\b/i.test(text);
+  }
+
   function classifyMarketText(value) {
     const text = normalizeText(value);
 
@@ -497,6 +540,10 @@
         strongMatches.push(category);
       }
     });
+
+    if (!isCategoryExcluded(text, "nba") && hasNbaAbbreviationPair(text)) {
+      strongMatches.push("nba");
+    }
 
     const matches = new Set(strongMatches);
 

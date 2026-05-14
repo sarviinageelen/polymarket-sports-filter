@@ -17,7 +17,7 @@
 - Modify `popup/popup.html`: add diagnostics counters and a find-next button.
 - Modify `popup/popup.css`: style the diagnostics panel and command button.
 - Modify `popup/popup.js`: read diagnostics from the content script and send the manual find-next command.
-- Modify `src/contentScript.js`: track filter stats, handle popup messages, expose a bounded manual search command.
+- Modify `src/contentScript.js`: track filter stats, handle popup messages, expose a bounded manual search command, and show a small in-page hint when all rendered rows are hidden.
 - Modify `src/sportClassifier.js`: add NBA abbreviations and additional real-world aliases.
 - Modify `tests/classifier.test.js`: add classifier regression cases.
 - Create `tests/filterState.test.js`: cover diagnostics text and labels.
@@ -100,6 +100,8 @@ assert.equal(matchesSelectedSports("LoL: Invictus Gaming vs Bilibili Gaming", ["
 assert.equal(matchesSelectedSports("UFC 328: Yaroslav Amosov vs Joel Alvarez", ["nba"]), false);
 assert.equal(matchesSelectedSports("/sports/nba/games Chicago Sky vs. Golden State Valkyries", ["nba"]), false);
 assert.equal(matchesSelectedSports("/sports/nhl/games/min-vs-col Wild vs. Avalanche Wild", ["nba"]), false);
+assert.equal(matchesSelectedSports("/event/lal-ala-bar-2026-05-13 Will Deportivo Alavés vs. FC Barcelona end in a draw?", ["nba"]), false);
+assert.equal(matchesSelectedSports("LAL vs OKC", ["nba"]), true);
 ```
 
 - [ ] Step 2: Run `npm test` and verify the new NBA abbreviation and false-positive cases fail before implementation.
