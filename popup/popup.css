@@ -86,6 +86,103 @@ input[type="checkbox"] {
   accent-color: #1f7a62;
 }
 
+.diagnostics {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #d7dde6;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.diagnostics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+h2 {
+  margin: 0;
+  color: #17202a;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.pill {
+  max-width: 150px;
+  overflow: hidden;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #2341a3;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.stats div {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #e5e9f0;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.stats dt {
+  color: #697586;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.stats dd {
+  margin: 2px 0 0;
+  color: #17202a;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.diagnostics-message,
+.search-message {
+  min-height: 16px;
+  margin-top: 10px;
+  color: #344054;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.search-message {
+  color: #5b6777;
+}
+
+.find-next {
+  width: 100%;
+  min-height: 34px;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #1f7a62;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.find-next:disabled {
+  background: #b8c0cc;
+  cursor: not-allowed;
+}
+
 .status {
   min-height: 16px;
   margin-top: 10px;

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Polymarket Sports Filter</title>
     <link rel="stylesheet" href="popup.css" />
+    <script src="../src/filterState.js" defer></script>
     <script src="../src/sportClassifier.js" defer></script>
     <script src="popup.js" defer></script>
   </head>
@@ -21,6 +22,35 @@
           <div id="sportsOptions" class="options"></div>
         </fieldset>
       </form>
+
+      <section class="diagnostics" aria-labelledby="diagnosticsTitle">
+        <div class="diagnostics-header">
+          <h2 id="diagnosticsTitle">Page status</h2>
+          <span id="selectedSportsLabel" class="pill">NBA</span>
+        </div>
+
+        <dl class="stats">
+          <div>
+            <dt>Matching</dt>
+            <dd id="matchingRows">-</dd>
+          </div>
+          <div>
+            <dt>Hidden</dt>
+            <dd id="hiddenRows">-</dd>
+          </div>
+          <div>
+            <dt>Checked</dt>
+            <dd id="renderedRows">-</dd>
+          </div>
+        </dl>
+
+        <p id="diagnosticsMessage" class="diagnostics-message">
+          Open a Polymarket profile page to inspect filtered rows.
+        </p>
+        <p id="searchMessage" class="search-message"></p>
+
+        <button id="findNextButton" class="find-next" type="button">Find next NBA row</button>
+      </section>
 
       <p id="status" class="status" role="status" aria-live="polite"></p>
     </main>

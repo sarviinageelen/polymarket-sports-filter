@@ -4,7 +4,7 @@
   "private": true,
   "description": "Manifest V3 Chrome extension that filters Polymarket profile rows by selected sports.",
   "scripts": {
-    "test": "node tests/classifier.test.js",
+    "test": "node tests/classifier.test.js && node tests/filterState.test.js",
     "qa:live": "node scripts/qa-live.js",
     "qa:deep": "node scripts/qa-deep.js",
     "qa:screenshots": "node scripts/qa-screenshots.js",

@@ -9,6 +9,7 @@ const TARGET_URL =
   process.env.PSF_PROFILE_URL ||
   "https://polymarket.com/profile/0x03e4bf005d66269e6eec3297346e48cca836c185";
 const CHECK_MODE = process.argv.includes("--check");
+const FIND_NEXT_CHECK = process.argv.includes("--find-next-check");
 const DEFAULT_COOKIE_JSON = path.join(ROOT, "cookie.json");
 const DEFAULT_SESSION_JSON = path.join(ROOT, ".qa", "polymarket-session.json");
 const COOKIE_JSON_PATH =
@@ -360,8 +361,8 @@ async function setDefaultSports(cdp, sessionId, contextId) {
   );
 }
 
-async function collectStatus(cdp, sessionId) {
-  return evaluate(
+async function collectStatus(cdp, sessionId, contextId) {
+  const pageStatus = await evaluate(
     cdp,
     sessionId,
     `(() => {
@@ -384,6 +385,18 @@ async function collectStatus(cdp, sessionId) {
       };
     })()`
   );
+
+  const runtimeStatus = contextId
+    ? await evaluate(
+        cdp,
+        sessionId,
+        `window.PolymarketSportsFilterRuntime ? window.PolymarketSportsFilterRuntime.getStatus() : null`,
+        10000,
+        contextId
+      )
+    : null;
+
+  return { ...pageStatus, runtimeStatus };
 }
 
 async function run() {
@@ -435,7 +448,17 @@ async function run() {
     await waitForEvaluate(cdp, page.sessionId, `Boolean(document.getElementById("psf-style"))`, 30000);
     await sleep(1500);
 
-    const status = await collectStatus(cdp, page.sessionId);
+    const status = await collectStatus(cdp, page.sessionId, context.id);
+    const findNext = FIND_NEXT_CHECK
+      ? await evaluate(
+          cdp,
+          page.sessionId,
+          `window.PolymarketSportsFilterRuntime.findNextMatchingRow()`,
+          45000,
+          context.id
+        )
+      : null;
+    const statusAfterFindNext = FIND_NEXT_CHECK ? await collectStatus(cdp, page.sessionId, context.id) : null;
 
     console.log(
       JSON.stringify(
@@ -447,6 +470,8 @@ async function run() {
           cookiesImported: cookies.length,
           sessionJsonPath: sessionState ? SESSION_JSON_PATH : null,
           status,
+          findNext,
+          statusAfterFindNext,
         },
         null,
         2

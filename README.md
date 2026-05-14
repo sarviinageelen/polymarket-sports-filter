@@ -14,6 +14,14 @@ Manifest V3 Chrome extension that filters Polymarket profile Positions and Activ
 
 Open the extension popup and select one or more sports. The page updates through `chrome.storage.sync` without a reload. NBA is selected by default.
 
+The popup also shows simple diagnostics for the active Polymarket profile tab:
+
+- `Matching`: rendered rows that match the selected sport filter and are allowed to show.
+- `Hidden`: rendered rows that were filtered out.
+- `Checked`: profile rows the extension inspected in the current Polymarket render batch.
+
+If NBA is selected and the page looks blank, the diagnostics explain whether the currently rendered Polymarket batch has no NBA rows. Use `Find next NBA row` to manually search deeper. That button scrolls in bounded steps and can click visible `Show more activity` or `Show more positions` controls up to a small limit; it never runs automatically.
+
 Supported sports in the popup:
 
 - NBA
@@ -42,6 +50,8 @@ Polymarket profile tabs use virtualized rows, especially on Activity and Positio
 For virtualized rows, non-matching markets are hidden in place with `visibility: hidden` instead of being collapsed with `display: none`. This preserves Polymarket's row measurements and avoids the row-swapping, repeated loading, and janky behavior that happened when hidden rows changed the virtual list height.
 
 Expected consequence: if the current Activity or Positions render batch has no NBA markets, the tab can look blank while NBA is selected. Scrolling lets Polymarket render deeper rows; matching NBA rows become visible when they enter the rendered range, while non-NBA rows stay hidden.
+
+The manual find-next command exists for that case. It is user-triggered, capped at 18 scroll attempts, and capped at 3 show-more clicks. If no matching row appears inside that range, the popup reports that no NBA row was found in the searched range.
 
 ## Project Structure
 
@@ -100,6 +110,18 @@ Pass a different profile URL after `--` when needed. The launcher restores `.qa/
 npm run open:profile -- "https://polymarket.com/@takumi-crypto-81"
 ```
 
+Run the same launcher in check mode to print the content-script diagnostics without keeping Chrome open:
+
+```bash
+npm run open:profile -- --check
+```
+
+Run the check mode with the manual find-next command:
+
+```bash
+npm run open:profile -- "https://polymarket.com/@demonren?tab=activity" --check --find-next-check
+```
+
 After logging in through the stable manual profile, save a reusable session bundle:
 
 ```bash
@@ -118,14 +140,12 @@ Live QA screenshots and reports are written to `.qa/`, which is intentionally ig
 
 ## Latest Demonren QA Snapshot
 
-Round checked locally on May 14, 2026 with restored `.qa/polymarket-session.json`, NBA selected by default, and screenshots plus DOM inspection saved under `.qa/round-check/`:
+Round checked locally on May 14, 2026 with restored `.qa/polymarket-session.json`, NBA selected by default, and content-script diagnostics from `npm run open:profile -- "https://polymarket.com/@demonren?tab=activity" --check --find-next-check`:
 
-- Activity at top: 23 rendered rows filtered out, 0 visible non-NBA rows.
-- Activity after scroll: 4 NBA rows visible, 44 rendered non-NBA rows filtered out, 0 visible non-NBA rows.
-- Positions Active at top: 22 rendered rows filtered out, 0 visible non-NBA rows.
-- Positions Closed at top: 2 NBA rows detected by DOM inspection, 20 rendered non-NBA rows filtered out, 0 visible non-NBA rows.
+- Activity initial diagnostics: 20 rendered rows, 20 hidden rows, 0 matching NBA rows, 0 visible non-NBA rows.
+- Manual find-next diagnostics: 18 bounded scroll attempts, 3 show-more clicks, no NBA row found in the searched range.
 
-The screenshots confirmed the browser was logged in and no non-NBA markets were shown. Blank space can still appear because hidden virtual rows intentionally keep their measured height.
+The browser check confirmed the restored session was logged in and no non-NBA markets were visible under NBA-only filtering. Blank space can still appear because hidden virtual rows intentionally keep their measured height.
 
 ## Manual Test Checklist
 

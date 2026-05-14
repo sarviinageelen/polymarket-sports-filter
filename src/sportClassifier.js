@@ -31,6 +31,14 @@
         "nba championship",
         "play-in tournament",
         "basketball playoffs",
+        "bkn",
+        "gsw",
+        "lac",
+        "lal",
+        "nop",
+        "nyk",
+        "okc",
+        "sas",
         "lakers",
         "los angeles lakers",
         "la lakers",
@@ -91,6 +99,24 @@
         "utah jazz",
         "wizards",
         "washington wizards",
+      ],
+      excludeKeywords: [
+        "wnba",
+        "women's nba",
+        "womens nba",
+        "atlanta dream",
+        "chicago sky",
+        "connecticut sun",
+        "dallas wings",
+        "golden state valkyries",
+        "indiana fever",
+        "las vegas aces",
+        "los angeles sparks",
+        "minnesota lynx",
+        "new york liberty",
+        "phoenix mercury",
+        "seattle storm",
+        "washington mystics",
       ],
       fallbackKeywords: ["playoffs", "playoff"],
     },
@@ -448,6 +474,10 @@
     return getPatterns(category, key).some((pattern) => pattern.test(text));
   }
 
+  function isCategoryExcluded(text, category) {
+    return hasPatternMatch(text, category, "excludeKeywords");
+  }
+
   function classifyMarketText(value) {
     const text = normalizeText(value);
 
@@ -459,6 +489,10 @@
     const categories = Object.keys(CATEGORY_DEFINITIONS);
 
     categories.forEach((category) => {
+      if (isCategoryExcluded(text, category)) {
+        return;
+      }
+
       if (hasPatternMatch(text, category, "keywords")) {
         strongMatches.push(category);
       }
@@ -467,6 +501,10 @@
     const matches = new Set(strongMatches);
 
     categories.forEach((category) => {
+      if (isCategoryExcluded(text, category)) {
+        return;
+      }
+
       if (!hasPatternMatch(text, category, "fallbackKeywords")) {
         return;
       }

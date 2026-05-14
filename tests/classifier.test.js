@@ -44,6 +44,8 @@ test("classifies NBA markets by league terms and team names", () => {
   assert.deepEqual(classifyMarketText("Knicks vs. 76ers"), ["nba"]);
   assert.deepEqual(classifyMarketText("Timberwolves vs. Cavaliers"), ["nba"]);
   assert.deepEqual(classifyMarketText("Suns vs. Clippers - Game 7"), ["nba"]);
+  assert.deepEqual(classifyMarketText("/sports/nba/games BOS vs DAL: Game spread"), ["nba"]);
+  assert.deepEqual(classifyMarketText("NYK vs ATL"), ["nba"]);
   assert.deepEqual(classifyMarketText("/sports/nba/games Hornets vs. Nets"), ["nba"]);
 });
 
@@ -55,6 +57,10 @@ test("hides non-NBA sports and non-sports when NBA is selected", () => {
   assert.equal(matchesSelectedSports("Will Trump win the election?", ["nba"]), false);
   assert.equal(matchesSelectedSports("/esports/cs2/games Counter-Strike: G2 vs Fluxo W7M", ["nba"]), false);
   assert.equal(matchesSelectedSports("/event/lol-fox1-gen-2026-05-14 Game Handicap: GEN vs BNK FEARX", ["nba"]), false);
+  assert.equal(matchesSelectedSports("LoL: Invictus Gaming vs Bilibili Gaming", ["nba"]), false);
+  assert.equal(matchesSelectedSports("UFC 328: Yaroslav Amosov vs Joel Alvarez", ["nba"]), false);
+  assert.equal(matchesSelectedSports("/sports/nba/games Chicago Sky vs. Golden State Valkyries", ["nba"]), false);
+  assert.equal(matchesSelectedSports("/sports/nhl/games/min-vs-col Wild vs. Avalanche Wild", ["nba"]), false);
   assert.equal(matchesSelectedSports("/sports/atp/games Felix Auger-Aliassime vs Jannik Sinner", ["nba"]), false);
 });
 
