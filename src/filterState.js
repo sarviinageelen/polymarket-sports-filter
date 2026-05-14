@@ -18,6 +18,10 @@
     return labels.length ? labels.join(", ") : "selected sports";
   }
 
+  function normalizeCompactMode(value) {
+    return value === true;
+  }
+
   function buildDiagnosticsMessage(stats, selectedSports, sportOptions) {
     const safeStats = stats || {};
     const selectedLabel = formatSelectedSportsLabel(selectedSports, sportOptions);
@@ -40,5 +44,6 @@
   return {
     buildDiagnosticsMessage,
     formatSelectedSportsLabel,
+    normalizeCompactMode,
   };
 });

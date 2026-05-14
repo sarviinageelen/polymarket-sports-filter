@@ -10,6 +10,7 @@ const TARGET_URL =
   "https://polymarket.com/profile/0x03e4bf005d66269e6eec3297346e48cca836c185";
 const CHECK_MODE = process.argv.includes("--check");
 const FIND_NEXT_CHECK = process.argv.includes("--find-next-check");
+const COMPACT_MODE = process.argv.includes("--compact-mode");
 const DEFAULT_COOKIE_JSON = path.join(ROOT, "cookie.json");
 const DEFAULT_SESSION_JSON = path.join(ROOT, ".qa", "polymarket-session.json");
 const COOKIE_JSON_PATH =
@@ -23,6 +24,7 @@ const PROFILE_DIR =
   process.env.PSF_OPEN_PROFILE_DIR ||
   path.join(os.tmpdir(), `psf-open-profile-${new Date().toISOString().replace(/[:.]/g, "-")}`);
 const STORAGE_KEY = "selectedSports";
+const COMPACT_MODE_STORAGE_KEY = "compactMode";
 const KNOWN_NON_NBA_SAMPLE_PATTERNS = [
   { label: "Barcelona", pattern: /\bbarcelona\b/i },
   { label: "Avalanche", pattern: /\bavalanche\b/i },
@@ -406,9 +408,10 @@ async function setDefaultSports(cdp, sessionId, contextId) {
   await evaluate(
     cdp,
     sessionId,
-    `new Promise((resolve) => chrome.storage.sync.set({${JSON.stringify(
-      STORAGE_KEY
-    )}: ["nba"]}, () => resolve(true)))`,
+    `new Promise((resolve) => chrome.storage.sync.set({
+      ${JSON.stringify(STORAGE_KEY)}: ["nba"],
+      ${JSON.stringify(COMPACT_MODE_STORAGE_KEY)}: ${JSON.stringify(COMPACT_MODE)}
+    }, () => resolve(true)))`,
     10000,
     contextId
   );
@@ -430,6 +433,7 @@ async function collectStatus(cdp, sessionId, contextId) {
         extensionActive: Boolean(document.getElementById("psf-style")),
         filteredRows: document.querySelectorAll("[data-psf-filtered]").length,
         hiddenRows: document.querySelectorAll(".psf-hidden-row").length,
+        hiddenVirtualRows: document.querySelectorAll(".psf-hidden-virtual-row").length,
         emptyHintVisible: visible(document.getElementById("psf-empty-hint")),
         loggedOut: [...document.querySelectorAll("button, a")]
           .filter(visible)

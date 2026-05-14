@@ -7,6 +7,7 @@
   }
 
   const STORAGE_KEY = "selectedSports";
+  const COMPACT_MODE_STORAGE_KEY = "compactMode";
   const HIDDEN_CLASS = "psf-hidden-row";
   const HIDDEN_VIRTUAL_CLASS = "psf-hidden-virtual-row";
   const MAX_ROW_TEXT_LENGTH = 900;
@@ -33,6 +34,7 @@
     /\b(won|lost|bought|sold|redeemed|yield|shares?|holdings yield|ago|at\s+\d+(?:\.\d+)?\s*¢|\$[\d,.]+|\d+(?:\.\d+)?\s*¢)\b/i;
 
   let selectedSports = api.DEFAULT_SELECTED_SPORTS.slice();
+  let compactModeEnabled = false;
   let scheduled = false;
   let filterTimer = 0;
   let settleTimer = 0;
@@ -83,6 +85,7 @@
       matchingRows: 0,
       matchingSamples: [],
       message: "",
+      compactMode: compactModeEnabled,
       renderedRows: 0,
       search: lastSearchResult,
       selectedSports: selectedSports.slice(),
@@ -108,14 +111,22 @@
   function readSettings() {
     if (!chrome.storage || !chrome.storage.sync) {
       selectedSports = api.DEFAULT_SELECTED_SPORTS.slice();
+      compactModeEnabled = false;
       scheduleFilter();
       return;
     }
 
-    chrome.storage.sync.get({ [STORAGE_KEY]: api.DEFAULT_SELECTED_SPORTS }, (items) => {
-      selectedSports = api.normalizeSelectedSports(items[STORAGE_KEY]);
-      scheduleFilter();
-    });
+    chrome.storage.sync.get(
+      { [STORAGE_KEY]: api.DEFAULT_SELECTED_SPORTS, [COMPACT_MODE_STORAGE_KEY]: false },
+      (items) => {
+        selectedSports = api.normalizeSelectedSports(items[STORAGE_KEY]);
+        compactModeEnabled =
+          stateApi && typeof stateApi.normalizeCompactMode === "function"
+            ? stateApi.normalizeCompactMode(items[COMPACT_MODE_STORAGE_KEY])
+            : items[COMPACT_MODE_STORAGE_KEY] === true;
+        scheduleFilter();
+      }
+    );
   }
 
   function runScheduledFilter() {
@@ -443,7 +454,8 @@
 
   function setHidden(element, shouldHide) {
     const nextState = shouldHide ? "hidden" : "shown";
-    const hiddenClass = element.matches(VIRTUAL_ROW_SELECTOR) ? HIDDEN_VIRTUAL_CLASS : HIDDEN_CLASS;
+    const hiddenClass =
+      element.matches(VIRTUAL_ROW_SELECTOR) && !compactModeEnabled ? HIDDEN_VIRTUAL_CLASS : HIDDEN_CLASS;
     const otherHiddenClass = hiddenClass === HIDDEN_CLASS ? HIDDEN_VIRTUAL_CLASS : HIDDEN_CLASS;
     const alreadyHidden = element.classList.contains(hiddenClass);
 
@@ -888,11 +900,24 @@
 
   function installStorageListener() {
     chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName !== "sync" || !changes[STORAGE_KEY]) {
+      if (
+        areaName !== "sync" ||
+        (!changes[STORAGE_KEY] && !changes[COMPACT_MODE_STORAGE_KEY])
+      ) {
         return;
       }
 
-      selectedSports = api.normalizeSelectedSports(changes[STORAGE_KEY].newValue);
+      if (changes[STORAGE_KEY]) {
+        selectedSports = api.normalizeSelectedSports(changes[STORAGE_KEY].newValue);
+      }
+
+      if (changes[COMPACT_MODE_STORAGE_KEY]) {
+        compactModeEnabled =
+          stateApi && typeof stateApi.normalizeCompactMode === "function"
+            ? stateApi.normalizeCompactMode(changes[COMPACT_MODE_STORAGE_KEY].newValue)
+            : changes[COMPACT_MODE_STORAGE_KEY].newValue === true;
+      }
+
       scheduleFilter();
     });
   }

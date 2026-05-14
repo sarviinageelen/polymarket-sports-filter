@@ -86,6 +86,33 @@ input[type="checkbox"] {
   accent-color: #1f7a62;
 }
 
+.compact-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e9f0;
+  color: #17202a;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.compact-option span {
+  display: grid;
+  gap: 2px;
+}
+
+.compact-option strong {
+  font-size: 12px;
+}
+
+.compact-option small {
+  color: #697586;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
 .diagnostics {
   margin-top: 12px;
   padding: 12px;

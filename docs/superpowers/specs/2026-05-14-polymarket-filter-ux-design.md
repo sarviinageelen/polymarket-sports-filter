@@ -10,6 +10,8 @@ Polymarket profile pages use virtualized lists. The page renders only a slice of
 
 The previous auto-search behavior made the page feel janky because it changed scroll position and row visibility while Polymarket was also measuring virtual rows. The next version must keep the filter stable and make deeper searching a manual action.
 
+Follow-up note: stable mode keeps filtered virtual rows in the layout to avoid jank. Compact mode is an opt-in override that collapses those rows when the user prefers a cleaner sparse list and accepts the higher scrolling risk.
+
 ## Scope
 
 This version includes three improvements:

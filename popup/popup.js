@@ -2,11 +2,13 @@
   const api = window.PolymarketSportsFilter;
   const stateApi = window.PolymarketFilterState;
   const STORAGE_KEY = "selectedSports";
+  const COMPACT_MODE_STORAGE_KEY = "compactMode";
   const MESSAGE_GET_STATUS = "PSF_GET_STATUS";
   const MESSAGE_FIND_NEXT_MATCH = "PSF_FIND_NEXT_MATCH";
   const REFRESH_INTERVAL_MS = 1000;
 
   const optionsRoot = document.getElementById("sportsOptions");
+  const compactModeInput = document.getElementById("compactMode");
   const status = document.getElementById("status");
   const selectedSportsLabel = document.getElementById("selectedSportsLabel");
   const matchingRows = document.getElementById("matchingRows");
@@ -104,6 +106,7 @@
     const lines = [
       `URL: ${latestDiagnostics.url || "-"}`,
       `Selected: ${latestDiagnostics.selectedSportsLabel || getCurrentSportsLabel()}`,
+      `Layout: ${latestDiagnostics.compactMode ? "Compact" : "Stable"}`,
       `Rendered: ${latestDiagnostics.renderedRows ?? "-"}`,
       `Visible matches: ${latestDiagnostics.visibleMatchingRows ?? "-"}`,
       `Total matches: ${latestDiagnostics.matchingRows ?? "-"}`,
@@ -286,6 +289,30 @@
     });
   }
 
+  function renderCompactMode(value) {
+    if (!compactModeInput) {
+      return;
+    }
+
+    compactModeInput.checked =
+      stateApi && typeof stateApi.normalizeCompactMode === "function"
+        ? stateApi.normalizeCompactMode(value)
+        : value === true;
+  }
+
+  function saveCompactMode() {
+    if (!compactModeInput) {
+      return;
+    }
+
+    const compactMode = Boolean(compactModeInput.checked);
+
+    chrome.storage.sync.set({ [COMPACT_MODE_STORAGE_KEY]: compactMode }, () => {
+      setStatus(compactMode ? "Compact mode on." : "Stable mode on.");
+      refreshPageStatus();
+    });
+  }
+
   function renderOptions(selectedSports) {
     const selected = new Set(api.normalizeSelectedSports(selectedSports));
 
@@ -321,21 +348,38 @@
     debugToggle.addEventListener("click", () => setDebugExpanded(!debugExpanded));
   }
 
+  if (compactModeInput) {
+    compactModeInput.addEventListener("change", saveCompactMode);
+  }
+
   setDebugExpanded(false);
 
-  chrome.storage.sync.get({ [STORAGE_KEY]: api.DEFAULT_SELECTED_SPORTS }, (items) => {
-    renderOptions(items[STORAGE_KEY]);
-    setStatus("");
-    refreshPageStatus();
-  });
+  chrome.storage.sync.get(
+    { [STORAGE_KEY]: api.DEFAULT_SELECTED_SPORTS, [COMPACT_MODE_STORAGE_KEY]: false },
+    (items) => {
+      renderOptions(items[STORAGE_KEY]);
+      renderCompactMode(items[COMPACT_MODE_STORAGE_KEY]);
+      setStatus("");
+      refreshPageStatus();
+    }
+  );
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== "sync" || !changes[STORAGE_KEY]) {
+    if (areaName !== "sync") {
       return;
     }
 
-    renderOptions(changes[STORAGE_KEY].newValue);
-    refreshPageStatus();
+    if (changes[STORAGE_KEY]) {
+      renderOptions(changes[STORAGE_KEY].newValue);
+    }
+
+    if (changes[COMPACT_MODE_STORAGE_KEY]) {
+      renderCompactMode(changes[COMPACT_MODE_STORAGE_KEY].newValue);
+    }
+
+    if (changes[STORAGE_KEY] || changes[COMPACT_MODE_STORAGE_KEY]) {
+      refreshPageStatus();
+    }
   });
 
   window.setInterval(refreshPageStatus, REFRESH_INTERVAL_MS);

@@ -24,6 +24,8 @@ If NBA is selected and the page looks blank, the diagnostics explain whether the
 
 Use `Show debug details` in the popup when you need to inspect what the extension classified. It prints the selected filter, current row counts, matching sample rows, and visible filtered samples from the active profile tab.
 
+Enable `Compact mode` in the popup if you want filtered-out virtual rows collapsed instead of left as blank space. Compact mode makes sparse NBA views easier to scan, but stable mode remains the default because it is less likely to fight Polymarket's virtual-list measurements while scrolling.
+
 When all rendered rows are hidden, the page also shows a small bottom-right hint so a blank filtered view does not look broken.
 
 Supported sports in the popup:
@@ -56,6 +58,8 @@ Polymarket profile tabs use virtualized rows, especially on Activity and Positio
 For virtualized rows, non-matching markets are hidden in place with `visibility: hidden` instead of being collapsed with `display: none`. This preserves Polymarket's row measurements and avoids the row-swapping, repeated loading, and janky behavior that happened when hidden rows changed the virtual list height.
 
 Expected consequence: if the current Activity or Positions render batch has no NBA markets, the tab can look blank while NBA is selected. Scrolling lets Polymarket render deeper rows; matching NBA rows become visible when they enter the rendered range, while non-NBA rows stay hidden.
+
+Compact mode is the opt-in exception. It uses `display: none` for filtered virtual rows to reduce the empty gaps shown by sparse profiles. If a profile starts feeling jumpy, turn Compact mode off and use the stable default.
 
 The manual find-next command exists for that case. It is user-triggered, capped at 18 scroll attempts, and capped at 3 show-more clicks. If no matching row appears inside that range, the popup reports that no NBA row was found in the searched range.
 
@@ -129,6 +133,12 @@ npm run open:profile -- "https://polymarket.com/@demonren?tab=activity" --check 
 ```
 
 Check mode also fails if NBA matching samples contain known non-NBA leakage terms such as `Barcelona`, `Avalanche`, `NHL`, or `La Liga`.
+
+Force Compact mode during a check with:
+
+```bash
+npm run open:profile -- "https://polymarket.com/@strike123?tab=activity" --check --compact-mode
+```
 
 After logging in through the stable manual profile, save a reusable session bundle:
 

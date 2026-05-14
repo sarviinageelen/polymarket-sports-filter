@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const {
   buildDiagnosticsMessage,
   formatSelectedSportsLabel,
+  normalizeCompactMode,
 } = require("../src/filterState");
 
 const sports = [
@@ -25,6 +26,13 @@ test("formats selected sport labels", () => {
   assert.equal(formatSelectedSportsLabel(["nba"], sports), "NBA");
   assert.equal(formatSelectedSportsLabel(["nba", "nfl"], sports), "NBA, NFL");
   assert.equal(formatSelectedSportsLabel(["unknown", "esports"], sports), "Esports");
+});
+
+test("normalizes compact mode to opt-in only", () => {
+  assert.equal(normalizeCompactMode(true), true);
+  assert.equal(normalizeCompactMode(false), false);
+  assert.equal(normalizeCompactMode("true"), false);
+  assert.equal(normalizeCompactMode(undefined), false);
 });
 
 test("explains unsupported pages", () => {
