@@ -8,6 +8,9 @@
     "qa:live": "node scripts/qa-live.js",
     "qa:deep": "node scripts/qa-deep.js",
     "qa:screenshots": "node scripts/qa-screenshots.js",
-    "qa:sequence": "node scripts/qa-sequence.js"
+    "qa:activity": "node scripts/qa-activity.js",
+    "qa:sequence": "node scripts/qa-sequence.js",
+    "open:profile": "node scripts/open-profile.js",
+    "save:session": "node scripts/save-session.js"
   }
 }

@@ -35,6 +35,14 @@ The local classifier also recognizes crypto and politics keywords so examples li
 - SPA navigation, profile tab switches, sorting, search updates, lazy-loaded rows, and show-more inserts are handled with `MutationObserver`, History API hooks, `popstate`, and a lightweight URL poll.
 - The extension fails open for page structure: it only hides row-like elements with known classifier keywords and leaves profile headers, tabs, search controls, footer, and unrelated sections alone.
 
+### Polymarket Virtual Lists
+
+Polymarket profile tabs use virtualized rows, especially on Activity and Positions. The extension filters only the rows Polymarket has rendered in the page; it does not fetch profile data from APIs or re-render an alternate table.
+
+For virtualized rows, non-matching markets are hidden in place with `visibility: hidden` instead of being collapsed with `display: none`. This preserves Polymarket's row measurements and avoids the row-swapping, repeated loading, and janky behavior that happened when hidden rows changed the virtual list height.
+
+Expected consequence: if the current Activity or Positions render batch has no NBA markets, the tab can look blank while NBA is selected. Scrolling lets Polymarket render deeper rows; matching NBA rows become visible when they enter the rendered range, while non-NBA rows stay hidden.
+
 ## Project Structure
 
 ```text
@@ -72,6 +80,34 @@ Run the exact Takumi Closed Positions to Activity regression check:
 npm run qa:sequence
 ```
 
+Run the wallet Activity regression check. It uses `cookie.json` from the repo root when present; otherwise pass an exported Polymarket cookie JSON so Chrome opens as the logged-in profile before the script clicks "Show more activity":
+
+```bash
+$env:POLYMARKET_COOKIE_JSON="C:\path\to\cookies.json"; npm run qa:activity
+```
+
+For a public-session probe without cookies, set `PSF_ACTIVITY_ALLOW_ANONYMOUS=1`.
+
+Open a visible local Chrome window with this unpacked extension loaded on the Demonren wallet profile:
+
+```bash
+npm run open:profile
+```
+
+Pass a different profile URL after `--` when needed. The launcher restores `.qa/polymarket-session.json` when present, otherwise it uses `cookie.json` from the repo root or `POLYMARKET_COOKIE_JSON`. It keeps Chrome alive until you press `Ctrl+C` in the terminal:
+
+```bash
+npm run open:profile -- "https://polymarket.com/@takumi-crypto-81"
+```
+
+After logging in through the stable manual profile, save a reusable session bundle:
+
+```bash
+$env:PSF_OPEN_PROFILE_DIR=".qa\manual-polymarket-profile"; npm run save:session
+```
+
+The bundle is written to `.qa/polymarket-session.json` and includes cookies plus Polymarket browser storage. `npm run open:profile` automatically restores it when present; pass `-- --no-session` to ignore it.
+
 Capture before/after screenshots for visual inspection:
 
 ```bash
@@ -79,6 +115,17 @@ npm run qa:screenshots
 ```
 
 Live QA screenshots and reports are written to `.qa/`, which is intentionally ignored by git.
+
+## Latest Demonren QA Snapshot
+
+Round checked locally on May 14, 2026 with restored `.qa/polymarket-session.json`, NBA selected by default, and screenshots plus DOM inspection saved under `.qa/round-check/`:
+
+- Activity at top: 23 rendered rows filtered out, 0 visible non-NBA rows.
+- Activity after scroll: 4 NBA rows visible, 44 rendered non-NBA rows filtered out, 0 visible non-NBA rows.
+- Positions Active at top: 22 rendered rows filtered out, 0 visible non-NBA rows.
+- Positions Closed at top: 2 NBA rows detected by DOM inspection, 20 rendered non-NBA rows filtered out, 0 visible non-NBA rows.
+
+The screenshots confirmed the browser was logged in and no non-NBA markets were shown. Blank space can still appear because hidden virtual rows intentionally keep their measured height.
 
 ## Manual Test Checklist
 

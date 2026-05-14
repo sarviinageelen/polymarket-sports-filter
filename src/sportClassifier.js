@@ -323,6 +323,8 @@
       keywords: [
         "esports",
         "e-sports",
+        "lol",
+        "lpl",
         "league of legends",
         "lol worlds",
         "valorant",
@@ -504,6 +506,10 @@
     return categories.some((category) => selected.has(category));
   }
 
+  function shouldHideForSelectedSports(text, selectedSports) {
+    return !matchesSelectedSports(text, selectedSports);
+  }
+
   function hasKnownCategory(text) {
     return classifyMarketText(text).length > 0;
   }
@@ -517,5 +523,6 @@
     matchesSelectedSports,
     normalizeSelectedSports,
     normalizeText,
+    shouldHideForSelectedSports,
   };
 });

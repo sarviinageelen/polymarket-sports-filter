@@ -7,20 +7,31 @@
 
   const STORAGE_KEY = "selectedSports";
   const HIDDEN_CLASS = "psf-hidden-row";
+  const HIDDEN_VIRTUAL_CLASS = "psf-hidden-virtual-row";
   const MAX_ROW_TEXT_LENGTH = 900;
   const MAX_ROW_HEIGHT = 340;
+  const MUTATION_FILTER_DELAY_MS = 120;
+  const BACKGROUND_FILTER_INTERVAL_MS = 1000;
+  const SETTLE_FILTER_DELAY_MS = 180;
+  const SETTLE_FILTER_PASSES = 20;
   const EVENT_MARKET_LINK_SELECTOR = "a[href*='/event/'], a[href*='/market/']";
   const CATEGORY_LINK_SELECTOR = "a[href*='/sports/'], a[href*='/esports/']";
   const FILTERABLE_LINK_SELECTOR = `${EVENT_MARKET_LINK_SELECTOR}, ${CATEGORY_LINK_SELECTOR}`;
   const VIRTUAL_ROW_SELECTOR = "[data-index][data-item-index], [data-item-index][data-known-size]";
+  const FILTERABLE_CONTENT_SELECTOR = `${FILTERABLE_LINK_SELECTOR}, ${VIRTUAL_ROW_SELECTOR}, [data-psf-filtered]`;
   const POLYMARKET_CLASSIFICATION_PATH = /\/(event|market|sports|esports)\//i;
   const PROFILE_LIST_TEXT_PATTERN =
     /\b(won|lost|bought|sold|redeemed|yield|shares?|holdings yield|ago|at\s+\d+(?:\.\d+)?\s*¢|\$[\d,.]+|\d+(?:\.\d+)?\s*¢)\b/i;
 
   let selectedSports = api.DEFAULT_SELECTED_SPORTS.slice();
   let scheduled = false;
+  let filterTimer = 0;
+  let settleTimer = 0;
+  let settlePassesRemaining = 0;
   let lastUrl = window.location.href;
   let observer = null;
+  let rowDecisionCache = new WeakMap();
+  const filteredRows = new Set();
 
   function isProfilePage() {
     return (
@@ -36,7 +47,7 @@
 
     const style = document.createElement("style");
     style.id = "psf-style";
-    style.textContent = `.${HIDDEN_CLASS}{display:none!important;}`;
+    style.textContent = `.${HIDDEN_CLASS}{display:none!important;}.${HIDDEN_VIRTUAL_CLASS}{visibility:hidden!important;pointer-events:none!important;}`;
     document.documentElement.appendChild(style);
   }
 
@@ -53,7 +64,9 @@
     });
   }
 
-  function scheduleFilter() {
+  function runScheduledFilter() {
+    filterTimer = 0;
+
     if (scheduled) {
       return;
     }
@@ -63,6 +76,51 @@
       scheduled = false;
       applyFilters();
     });
+  }
+
+  function scheduleFilter(delayMs = 0) {
+    if (scheduled) {
+      return;
+    }
+
+    if (filterTimer) {
+      if (delayMs > 0) {
+        return;
+      }
+
+      window.clearTimeout(filterTimer);
+      filterTimer = 0;
+    }
+
+    if (delayMs > 0) {
+      filterTimer = window.setTimeout(runScheduledFilter, delayMs);
+      return;
+    }
+
+    runScheduledFilter();
+  }
+
+  function runSettlingFilter() {
+    settleTimer = 0;
+
+    if (settlePassesRemaining <= 0) {
+      return;
+    }
+
+    settlePassesRemaining -= 1;
+    scheduleFilter();
+
+    if (settlePassesRemaining > 0) {
+      settleTimer = window.setTimeout(runSettlingFilter, SETTLE_FILTER_DELAY_MS);
+    }
+  }
+
+  function scheduleSettlingFilters() {
+    settlePassesRemaining = Math.max(settlePassesRemaining, SETTLE_FILTER_PASSES);
+
+    if (!settleTimer) {
+      settleTimer = window.setTimeout(runSettlingFilter, SETTLE_FILTER_DELAY_MS);
+    }
   }
 
   function getMainRoot() {
@@ -135,16 +193,6 @@
     return element.getBoundingClientRect();
   }
 
-  function hasMarketLink(element) {
-    return Boolean(
-      element.matches(FILTERABLE_LINK_SELECTOR) || element.querySelector(FILTERABLE_LINK_SELECTOR)
-    );
-  }
-
-  function isEventMarketLink(element) {
-    return element.matches(EVENT_MARKET_LINK_SELECTOR);
-  }
-
   function looksLikeProfileListRow(element) {
     return PROFILE_LIST_TEXT_PATTERN.test(getElementText(element));
   }
@@ -200,7 +248,7 @@
       return virtualRow;
     }
 
-    if (isEventMarketLink(element)) {
+    if (element.matches(FILTERABLE_LINK_SELECTOR)) {
       return resolveRowElement(element, root);
     }
 
@@ -256,10 +304,6 @@
     const rows = new Set();
 
     root.querySelectorAll(FILTERABLE_LINK_SELECTOR).forEach((element) => {
-      if (!canBeMarketRowShape(element)) {
-        return;
-      }
-
       const row = resolveMarketLinkRow(element, root);
 
       if (row && canBeMarketRowShape(row)) {
@@ -303,37 +347,152 @@
     return cleanText(`${getElementText(element)} ${linkText}`);
   }
 
+  function getSelectedSportsKey() {
+    return selectedSports.join(",");
+  }
+
+  function getRowDecision(row, selectedSportsKey) {
+    const text = getClassificationText(row);
+    const cached = rowDecisionCache.get(row);
+
+    if (cached && cached.text === text && cached.selectedSportsKey === selectedSportsKey) {
+      return { row, shouldHide: cached.shouldHide };
+    }
+
+    const shouldHide = api.shouldHideForSelectedSports(text, selectedSports);
+    rowDecisionCache.set(row, { selectedSportsKey, shouldHide, text });
+
+    return { row, shouldHide };
+  }
+
+  function clearFilteredElement(element) {
+    element.classList.remove(HIDDEN_CLASS);
+    element.classList.remove(HIDDEN_VIRTUAL_CLASS);
+    delete element.dataset.psfFiltered;
+    filteredRows.delete(element);
+    rowDecisionCache.delete(element);
+  }
+
   function setHidden(element, shouldHide) {
-    element.classList.toggle(HIDDEN_CLASS, shouldHide);
-    element.dataset.psfFiltered = shouldHide ? "hidden" : "shown";
+    const nextState = shouldHide ? "hidden" : "shown";
+    const hiddenClass = element.matches(VIRTUAL_ROW_SELECTOR) ? HIDDEN_VIRTUAL_CLASS : HIDDEN_CLASS;
+    const otherHiddenClass = hiddenClass === HIDDEN_CLASS ? HIDDEN_VIRTUAL_CLASS : HIDDEN_CLASS;
+    const alreadyHidden = element.classList.contains(hiddenClass);
+
+    if (element.dataset.psfFiltered === nextState && alreadyHidden === shouldHide) {
+      return false;
+    }
+
+    element.classList.remove(otherHiddenClass);
+    element.classList.toggle(hiddenClass, shouldHide);
+    element.dataset.psfFiltered = nextState;
+    filteredRows.add(element);
+    return true;
   }
 
   function revealAllFilteredRows() {
-    document.querySelectorAll(`.${HIDDEN_CLASS}, [data-psf-filtered]`).forEach((element) => {
-      element.classList.remove(HIDDEN_CLASS);
-      delete element.dataset.psfFiltered;
+    document.querySelectorAll(`.${HIDDEN_CLASS}, .${HIDDEN_VIRTUAL_CLASS}, [data-psf-filtered]`).forEach((element) => {
+      clearFilteredElement(element);
+    });
+    filteredRows.forEach((element) => {
+      clearFilteredElement(element);
+    });
+    rowDecisionCache = new WeakMap();
+  }
+
+  function clearStaleFilteredRows(activeRows) {
+    filteredRows.forEach((element) => {
+      if (!element.isConnected || !activeRows.has(element)) {
+        clearFilteredElement(element);
+      }
     });
   }
 
   function applyFilters() {
     if (!isProfilePage()) {
+      settlePassesRemaining = 0;
+      if (settleTimer) {
+        window.clearTimeout(settleTimer);
+        settleTimer = 0;
+      }
       revealAllFilteredRows();
       return;
     }
 
     const rows = collectCandidateRows();
     const activeRows = new Set(rows);
+    const selectedSportsKey = getSelectedSportsKey();
+    const decisions = rows.map((row) => getRowDecision(row, selectedSportsKey));
 
-    rows.forEach((row) => {
-      const text = getClassificationText(row);
-      setHidden(row, !api.matchesSelectedSports(text, selectedSports));
-    });
+    const changedRows = decisions.reduce(
+      (count, decision) => count + (setHidden(decision.row, decision.shouldHide) ? 1 : 0),
+      0
+    );
 
-    document.querySelectorAll("[data-psf-filtered]").forEach((element) => {
-      if (!activeRows.has(element)) {
-        setHidden(element, false);
-      }
-    });
+    clearStaleFilteredRows(activeRows);
+
+    if (changedRows > 0) {
+      scheduleSettlingFilters();
+    }
+  }
+
+  function getMutationElement(node) {
+    if (node instanceof Element) {
+      return node;
+    }
+
+    return node && node.parentElement ? node.parentElement : null;
+  }
+
+  function containsFilterableContent(element) {
+    if (!(element instanceof Element)) {
+      return false;
+    }
+
+    return Boolean(
+      element.matches(FILTERABLE_CONTENT_SELECTOR) ||
+        element.closest(FILTERABLE_CONTENT_SELECTOR) ||
+        element.querySelector(FILTERABLE_CONTENT_SELECTOR)
+    );
+  }
+
+  function mutationCouldAffectRows(mutation, root) {
+    const target = getMutationElement(mutation.target);
+
+    if (!target) {
+      return false;
+    }
+
+    const touchesRoot = root.contains(target) || target.contains(root);
+
+    if (!touchesRoot) {
+      return false;
+    }
+
+    if (mutation.type === "childList") {
+      return true;
+    }
+
+    if (mutation.type === "attributes") {
+      return (
+        (mutation.attributeName === "href" ||
+          mutation.attributeName === "class" ||
+          mutation.attributeName === "data-psf-filtered") &&
+        containsFilterableContent(target)
+      );
+    }
+
+    if (mutation.type === "characterData") {
+      return containsFilterableContent(target);
+    }
+
+    return false;
+  }
+
+  function shouldScheduleForMutations(mutations) {
+    const root = getMainRoot();
+
+    return mutations.some((mutation) => mutationCouldAffectRows(mutation, root));
   }
 
   function installMutationObserver() {
@@ -342,21 +501,14 @@
     }
 
     observer = new MutationObserver((mutations) => {
-      if (
-        mutations.some(
-          (mutation) =>
-            mutation.type === "childList" ||
-            mutation.type === "characterData" ||
-            (mutation.type === "attributes" && mutation.attributeName === "href")
-        )
-      ) {
-        scheduleFilter();
+      if (shouldScheduleForMutations(mutations)) {
+        scheduleFilter(MUTATION_FILTER_DELAY_MS);
       }
     });
 
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["href"],
+      attributeFilter: ["href", "class", "data-psf-filtered"],
       characterData: true,
       childList: true,
       subtree: true,
@@ -388,6 +540,14 @@
     window.setInterval(handleUrlChange, 1000);
   }
 
+  function installBackgroundFilter() {
+    window.setInterval(() => {
+      if (isProfilePage()) {
+        scheduleFilter(MUTATION_FILTER_DELAY_MS);
+      }
+    }, BACKGROUND_FILTER_INTERVAL_MS);
+  }
+
   function installStorageListener() {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== "sync" || !changes[STORAGE_KEY]) {
@@ -403,5 +563,6 @@
   readSettings();
   installMutationObserver();
   installUrlWatcher();
+  installBackgroundFilter();
   installStorageListener();
 })();

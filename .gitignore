@@ -1,5 +1,9 @@
 .context/
 .qa/
+artifacts/
+cookie.json
+polymarket.com_*.png
+*.xlsx
 node_modules/
 npm-debug.log*
 yarn-debug.log*

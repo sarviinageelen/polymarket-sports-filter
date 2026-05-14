@@ -6,6 +6,7 @@ const {
   classifyMarketText,
   matchesSelectedSports,
   normalizeSelectedSports,
+  shouldHideForSelectedSports,
 } = require("../src/sportClassifier");
 
 function test(name, fn) {
@@ -53,7 +54,20 @@ test("hides non-NBA sports and non-sports when NBA is selected", () => {
   assert.equal(matchesSelectedSports("Will Bitcoin hit $100k in 2026?", ["nba"]), false);
   assert.equal(matchesSelectedSports("Will Trump win the election?", ["nba"]), false);
   assert.equal(matchesSelectedSports("/esports/cs2/games Counter-Strike: G2 vs Fluxo W7M", ["nba"]), false);
+  assert.equal(matchesSelectedSports("/event/lol-fox1-gen-2026-05-14 Game Handicap: GEN vs BNK FEARX", ["nba"]), false);
   assert.equal(matchesSelectedSports("/sports/atp/games Felix Auger-Aliassime vs Jannik Sinner", ["nba"]), false);
+});
+
+test("classifies LoL activity and event slugs as esports", () => {
+  assert.deepEqual(classifyMarketText("LoL: Weibo Gaming vs JD Gaming (BO3) - LPL Group Ascend"), ["esports"]);
+  assert.deepEqual(classifyMarketText("/event/lol-fox1-gen-2026-05-14 Game Handicap: GEN vs BNK FEARX"), ["esports"]);
+});
+
+test("hides everything except selected sports rows", () => {
+  assert.equal(shouldHideForSelectedSports("Lakers vs. Thunder", ["nba"]), false);
+  assert.equal(shouldHideForSelectedSports("Chiefs vs. Eagles", ["nba"]), true);
+  assert.equal(shouldHideForSelectedSports("Valencia vs. Panathinaikos", ["nba"]), true);
+  assert.equal(shouldHideForSelectedSports("Gaza flotilla enters Israeli waters by May 31?", ["nba"]), true);
 });
 
 test("shows all selected sports when multiple sports are enabled", () => {
